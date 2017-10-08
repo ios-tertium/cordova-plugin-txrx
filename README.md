@@ -142,7 +142,7 @@ cordova.plugins.txrx.disconnect();
 
 When the device has been succesfully disconnected, your `onDeviceDisconnected` callback will be called.
 
-### Check is a device is connected
+### Check if a device is connected
 If you need to check wether a certain device is currrently connected or not, use the `isDeviceConnected` method, passing the device's address as a parameter:
 
 ```Javascript
