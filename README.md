@@ -5,6 +5,8 @@ Cordova plugin wrapping the native Android and iOS TxRx libraries.
 The plugin is released under the MIT license. Please see the `LICENSE.txt` file.
 
 ## Requirements
+__Android:__
+
 This plugin requires Android SDK 18 or newer, you are then required to specify the minimum Android SDK version in your `config.xml` file. Do __not__ place place the following code inside the `<platform name="android">` tag.
 
 ```xml
@@ -19,7 +21,7 @@ cordova plugin add https://github.com/tertiumtechnology/cordova-plugin-txrx.git
 ```
 
 ## Demo app
-We have the developed a demo cordova app to showcase the plugin, you can find it [here](https://github.com/tertiumtechnology/txrx-demo-cordova.git).
+We have developed a demo cordova app to showcase the plugin, you can find it [here](https://github.com/tertiumtechnology/txrx-demo-cordova.git).
 
 ## Usage
 The first thing you need to do is register the callback functions that the plugin is going to call whenever a certain event occurs (eg. a message has been received, a device just disconnected and so on...). You will then implement your own login inside your callbacks functions.
