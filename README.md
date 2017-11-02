@@ -13,6 +13,10 @@ This plugin requires Android SDK 18 or newer, you are then required to specify t
 <preference name="android-minSdkVersion" value="18" />
 ```
 
+__iOS:__
+
+No particular requirements.
+
 ## Installation
 To install the plugin run the following command inside your cordova project's folder:
 
