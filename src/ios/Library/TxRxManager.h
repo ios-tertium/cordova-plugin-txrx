@@ -24,6 +24,7 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreBluetooth/CoreBluetooth.h>
+#import "TxRxManagerTimeOuts.h"
 #import "TxRxWatchDogTimer.h"
 #import "TxRxDeviceScanProtocol.h"
 #import "TxRxDeviceProfile.h"
@@ -62,26 +63,6 @@
  */
 @property (nonatomic) bool isScanning;
 
-/**
- connectTimeout - The MAXIMUM time the class and BLE hardware have to connect to a BLE device
- */
-@property (nonatomic) double connectTimeout;
-
-/**
- receiveFirstPacketTimeout - The MAXIMUM time a Tertium BLE device has to send the first response packet to an issued command
- */
-@property (nonatomic) double receiveFirstPacketTimeout;
-
-/**
- receivePacketsTimeout - The MAXIMUM time a Tertium BLE device has to send the after having sent the first response packet to an issued command (commands and data are sent in FRAGMENTS)
- */
-@property (nonatomic) double receivePacketsTimeout;
-
-/**
- writePacketTimeout - The MAXIMUM time a Tertium BLE device has to notify when a write operation on a device is issued by sendData method
- */
-@property (nonatomic) double writePacketTimeout;
-
 // Please find documentation about class methods and class description in the implementation file
 +(instancetype _Nonnull) getManager;
 
@@ -94,5 +75,9 @@
 // APACHE CORDOVA UTILITY METHODS
 -(TxRxDevice *_Nullable) deviceWithIndexedName: (NSString *_Nonnull) name;
 -(NSString *_Nonnull) getDeviceIndexedName: (TxRxDevice *_Nonnull) device;
+
+-(void)setTimeOutDefaults;
+-(uint32_t) getTimeOutValue: (NSString *_Nonnull) timeOutType;
+-(void)setTimeOutValue: (uint32_t) timeoutvalue forTimeOutType: (NSString *_Nonnull) timeOutType;
 
 @end

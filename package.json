@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-txrx",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Cordova plugin wrapping the native Android and iOS TxRx libraries",
   "author": {
     "name": "Tertium Technology"

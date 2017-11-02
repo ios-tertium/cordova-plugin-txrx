@@ -28,7 +28,7 @@
 @synthesize serviceUUID, rxUUID, txUUID, commandEnd, maxSendPacketSize;
 
 /**
- newProfileWithParameters - Creates an instance of TxRxDeviceProfile
+ Creates an instance of TxRxDeviceProfile
  
  NOTE: CLASS method
 
@@ -45,7 +45,7 @@
 }
 
 /**
- newProfileWithParameters - Initializes an instance of TxRxDeviceProfile
+ Initializes an instance of TxRxDeviceProfile
  
  NOTE: INSTANCE method used for initializing readonly methods
  

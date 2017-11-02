@@ -37,7 +37,7 @@
 NSData* _dataToSend;
 
 /**
- Init - initializes and instance of TxRxDevice
+ Initializes and instance of TxRxDevice
 
  @return - a new TxRxDevice instance
  */
@@ -52,7 +52,7 @@ NSData* _dataToSend;
 }
 
 /**
- isConnected - Implements isConnected readonly property 
+ Implements isConnected readonly property
  
  NOTE: accesses protected deviceConnected field (refer to TxRxDeviceManagerExchangeProtocol for details)
 
@@ -68,7 +68,7 @@ NSData* _dataToSend;
 @synthesize watchDogTimer, sendingData, bytesToSend, bytesSent, totalBytesSent, deviceConnected, dataToSend = _dataToSend, receivedData, deviceProfile;
 
 /**
- dataToSend - Implements dataToSend property getter
+ Implements dataToSend property getter
  
  NOTE: PROTECTED method (refer to TxRxDeviceManagerExchangeProtocol for details)
  
@@ -80,7 +80,7 @@ NSData* _dataToSend;
 }
 
 /**
- setDataToSend - Implements dataToSend property setter
+ Implements dataToSend property setter
  
  NOTE: PROTECTED method (refer to TxRxDeviceManagerExchangeProtocol for details)
  
@@ -95,7 +95,7 @@ NSData* _dataToSend;
 }
 
 /**
- scheduleWatchdogWithParameters - Utility method to create an instance of TxRxWatchDog and assign it to this TxRxDevice's instance
+ Utility method to create an instance of TxRxWatchDog and assign it to this TxRxDevice's instance
 
  NOTE: invalidates previous existing watchdog
  NOTE: PROTECTED method (refer to TxRxDeviceManagerExchangeProtocol for details)
@@ -107,7 +107,7 @@ NSData* _dataToSend;
 }
 
 /**
- resetReceivedData - Utility method to clear receivedData (NSMutable data) class contents
+ Utility method to clear receivedData (NSMutable data) class contents
  
  NOTE: PROTECTED method (refer to TxRxDeviceManagerExchangeProtocol for details)
  */
@@ -117,7 +117,7 @@ NSData* _dataToSend;
 }
 
 /**
-resetStates - Utility method to clear device states
+ Utility method to clear device states
 
 NOTE: PROTECTED method (refer to TxRxDeviceManagerExchangeProtocol for details)
 */
@@ -132,7 +132,7 @@ NOTE: PROTECTED method (refer to TxRxDeviceManagerExchangeProtocol for details)
 }
 
 /**
- invalidateTimer - Utility method to invalidate current TxRxDevice watchdog timer
+ Utility method to invalidate current TxRxDevice watchdog timer
  
  NOTE: PROTECTED method (refer to TxRxDeviceManagerExchangeProtocol for details)
  */

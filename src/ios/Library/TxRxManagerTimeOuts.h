@@ -22,28 +22,19 @@
  * THE SOFTWARE.
  */
 
-#import <Foundation/Foundation.h>
-
-@class TxRxDevice;
+#ifndef TxRxManagerTimeOuts_h
+#define TxRxManagerTimeOuts_h
 
 /**
+ TxRxManager library TxRxManagerTimeOuts
  
- TxRxWatchDogTimer is an instance class responsible for implementing watchdogs on timeout operations.
- 
- Each instance is created or destroyed by TxRxManager to control timeouts in scan of, connect to and data exchange with TxRxDevices
+ TxRxManagerTimeOuts constants for timeOut types for TxRxManager library
  
  */
-@interface TxRxWatchDogTimer : NSObject
 
-// Mantains a reference to the TxRxDevice which is being handled
-@property (nonatomic, strong, readonly, nonnull) TxRxDevice * device;
+#define S_TERTIUM_TIMEOUT_CONNECT @"tmConnect"
+#define S_TERITUM_TIMEOUT_RECEIVE_FIRST_PACKET @"tmReceiveFirstPacket"
+#define S_TERTIUM_TIMEOUT_RECEIVE_PACKETS @"tmReceivePackets"
+#define S_TERTIUM_TIMEOUT_SEND_PACKET @"tmSendPackets"
 
-// Specifies the purpose for the timer
-@property (nonatomic, strong, readonly, nonnull) NSNumber *phase;
-
-// Defines when the timer will tick
-@property (nonatomic, readonly) NSInteger interval;
-
-+(instancetype _Nonnull)scheduledTimerWithParameters:(nullable TxRxDevice *) device inPhase: (NSInteger) inPhase withInterval:(NSTimeInterval)ti target:(id _Nonnull )aTarget selector:(SEL _Nonnull)aSelector userInfo:(nullable id)userInfo repeats:(BOOL)yesOrNo;
--(void)stop;
-@end
+#endif /* TxRxManagerTimeOuts_h */

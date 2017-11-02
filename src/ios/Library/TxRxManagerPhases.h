@@ -33,7 +33,7 @@
  TxRxDevicePhases enum contains the phases TxRxManager devices utilize
  
  */
-typedef NS_ENUM(NSUInteger, TxRxDevicePhases)
+typedef NS_ENUM(uint32_t, TxRxDevicePhases)
 {
     TERTIUM_PHASE_CONNECTING = 1
     ,TERTIUM_PHASE_DISCONNECTING

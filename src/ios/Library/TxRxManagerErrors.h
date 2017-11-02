@@ -35,7 +35,7 @@
  Both an NSUInteger error code and a string error code will be reported in NSError classes (refer to TxRxDeviceScanProtocol and TxRxDeviceDataProtocol for delegating details)
  
  */
-typedef NS_ENUM(NSUInteger, TxMRxManagerErrors)
+typedef NS_ENUM(uint32_t, TxMRxManagerErrors)
 {
     TERTIUM_ERROR_BLUETOOTH_NOT_READY_OR_LOST
     ,TERTIUM_ERROR_UNABLE_TO_SCAN_BLUETOOTH_DISABLED

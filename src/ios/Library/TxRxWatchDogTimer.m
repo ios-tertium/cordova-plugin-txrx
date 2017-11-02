@@ -34,7 +34,7 @@ id _target;
 SEL _selector;
 
 /**
- scheduledTimerWithParameters - Creates a NSTimer with specified parameters including TxRxDevice reference and operational phase (purpose of the watchdog timer)
+ Creates a NSTimer with specified parameters including TxRxDevice reference and operational phase (purpose of the watchdog timer)
  
  NOTE: this is a CLASS method, not an INSTANCE method
 
@@ -53,7 +53,7 @@ SEL _selector;
 }
 
 /**
- initWithParameters - Initializes an instance of TxRxWatchDogTimer class
+ Initializes an instance of TxRxWatchDogTimer class
  
  NOTE: INSTANCE method used for initializing readonly methods
  
@@ -80,7 +80,7 @@ SEL _selector;
 }
 
 /**
- watchDogTimerTick - Handles NSTimer's tick method and dispatches class information to supplied method of supplied class (TxRxManager watchDog callback handlers)
+ Handles NSTimer's tick method and dispatches class information to supplied method of supplied class (TxRxManager watchDog callback handlers)
 
  @param timer - The instance of the NSTimer used
  */
@@ -100,7 +100,7 @@ SEL _selector;
 }
 
 /**
- stop - Stops and invalidates the underling NSTimer instance. 
+ Stops and invalidates the underling NSTimer instance. 
  
  NOTE: When stop is called a TxRxDevice operation issued correctly and no timeout in bluetooth data exchange happened
  */

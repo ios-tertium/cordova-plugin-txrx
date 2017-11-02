@@ -42,7 +42,6 @@
 #pragma mark TxRxManager implementation
 
 @implementation TxRxManager
-@synthesize connectTimeout, receiveFirstPacketTimeout, receivePacketsTimeout, writePacketTimeout;
 
 // Private class attributes
 
@@ -60,6 +59,26 @@ CBCentralManager *_centralManager;
  Array of supported Tertium BLE Devices (please refer to init method for details)
  */
 NSArray *_txRxSupportedDevices;
+
+/**
+ connectTimeout - The MAXIMUM time the class and BLE hardware have to connect to a BLE device
+ */
+double _connectTimeout;
+
+/**
+ receiveFirstPacketTimeout - The MAXIMUM time a Tertium BLE device has to send the first response packet to an issued command
+ */
+double _receiveFirstPacketTimeout;
+
+/**
+ receivePacketsTimeout - The MAXIMUM time a Tertium BLE device has to send the after having sent the first response packet to an issued command (commands and data are sent in FRAGMENTS)
+ */
+double _receivePacketsTimeout;
+
+/**
+ writePacketTimeout - The MAXIMUM time a Tertium BLE device has to notify when a write operation on a device is issued by sendData method
+ */
+double _writePacketTimeout;
 
 /**
  Mutable array of scannned devices found by startScan. Used for input parameter validation and internal cleanup
@@ -82,7 +101,7 @@ NSMutableArray *_disconnectingDevices;
 NSMutableArray *_connectedDevices;
 
 /**
- getManager - Gets the single instance of the class
+ Gets the single instance of the class
  
  NOTE: CLASS Method
 
@@ -99,7 +118,7 @@ NSMutableArray *_connectedDevices;
 }
 
 /**
- init - Initializes the instance of TxRxManager class
+ Initializes the instance of TxRxManager class
 
  @return - The instance of TxRxManager class with default parameters
  */
@@ -112,10 +131,7 @@ NSMutableArray *_connectedDevices;
         _dispatchQueue = _callbackQueue;
         
         // Set timeout defaults
-        connectTimeout = 20;
-        receiveFirstPacketTimeout = 2;
-        receivePacketsTimeout = 0.5f;
-        writePacketTimeout = 0.5f;
+        [self setTimeOutDefaults];
         
         // Array of supported devices. Add new devices here !
         _txRxSupportedDevices = @[
@@ -153,7 +169,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark CBCentralManagerDelegate implementation
 
 /**
- centralManagerDidUpdateState - Processes CoreBlueTooth manager state updates. Will set _poweredOn flag when CoreBluetooth and bluetooth hardware is ready to operate
+ Processes CoreBlueTooth manager state updates. Will set _poweredOn flag when CoreBluetooth and bluetooth hardware is ready to operate
  */
 -(void)centralManagerDidUpdateState:(CBCentralManager *)central
 {
@@ -180,7 +196,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark CBCentralManagerDelegate implementation
 
 /**
- startScan - begins the scan of BLE devices. NOTE: you CANNOT connect to any device while scanning for devices. Call stopScan first.
+ Begins the scan of BLE devices. NOTE: you CANNOT connect to any device while scanning for devices. Call stopScan first.
  */
 -(void)startScan
 {
@@ -208,7 +224,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark CBCentralManagerDelegate implementation
 
 /**
- didDiscoverPeripheral - Implements CBCentralManagerDelegate callback. Creates instances of TxRxDevice and informs delegate of the discovering of peripherals
+ Implements CBCentralManagerDelegate callback. Creates instances of TxRxDevice and informs delegate of the discovering of peripherals
  */
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
 {
@@ -239,7 +255,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark TxRxManager implementation
 
 /**
- stopScan - Ends the scan of BLE devices 
+ Ends the scan of BLE devices
  
  NOTE: After scan ends you can connect to devices found
  */
@@ -270,7 +286,7 @@ NSMutableArray *_connectedDevices;
 
 
 /**
- connectDevice - Tries to connect to a previously found (by startScan) BLE device
+ Tries to connect to a previously found (by startScan) BLE device
  
  NOTE: Connect is an asyncronous operation, delegate will be informed when and if connected
  
@@ -310,7 +326,7 @@ NSMutableArray *_connectedDevices;
     hiddenDevice = (NSObject<TxRxDeviceManagerExchangeProtocol> *) device;
     
     // Create connect watchdog timer
-    [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_CONNECTING withInterval: connectTimeout target: self selector: @selector(watchDogTimerForConnectTick:ManagesDevice:inPhase:)];
+    [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_CONNECTING withInterval: _connectTimeout target: self selector: @selector(watchDogTimerForConnectTick:ManagesDevice:inPhase:)];
     
     // Device is added to the list of connecting devices
     [_connectingDevices addObject: device];
@@ -338,7 +354,7 @@ NSMutableArray *_connectedDevices;
 
 #pragma mark CBCentralManagerDelegate implementation
 /**
- didConnectPeripheral - CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has connected to a device
+ CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has connected to a device
  */
 -(void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
@@ -359,7 +375,7 @@ NSMutableArray *_connectedDevices;
 }
 
 /**
- didConnectPeripheral - CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has connected to a device
+ CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has connected to a device
  */
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral
 {
@@ -395,7 +411,7 @@ NSMutableArray *_connectedDevices;
 }
 
 /**
- didDiscoverServices - CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has discovered device's services
+ CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has discovered device's services
  */
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
 {
@@ -437,7 +453,7 @@ NSMutableArray *_connectedDevices;
 }
 
 /**
- didDiscoverCharacteristicsForService - CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has discovered device service characteristics
+ CBCentralManagerDelegate delegate implementation. Called by CoreBluetooth when it has discovered device service characteristics
  */
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service
              error:(NSError *)error
@@ -470,7 +486,7 @@ NSMutableArray *_connectedDevices;
 
 
 /**
- sendData - Begins sending the NSData byte buffer to a connected device.
+ Begins sending the NSData byte buffer to a connected device.
  
  NOTE: you may ONLY send data to already connected devices
  NOTE: Data to device is sent in MTU fragments (refer to TxRxDeviceProfile maxSendPacketSize class attribute)
@@ -526,7 +542,7 @@ NSMutableArray *_connectedDevices;
 }
 
 /**
- deviceSendDataPiece - Sends a fragment of data to the device
+ Sends a fragment of data to the device
  
  NOTE: This method is also called in response to CoreBlueTooth send data fragment acknowledge
 
@@ -552,14 +568,14 @@ NSMutableArray *_connectedDevices;
             hiddenDevice.bytesSent = packetSize;
             
             // Enable recieve watchdog timer for send acks
-            [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_WAITING_SEND_ACK withInterval: (hiddenDevice.totalBytesSent == 0 ? receiveFirstPacketTimeout: receivePacketsTimeout) target: self selector: @selector(watchDogTimerTickReceivingSendAck:ManagesDevice:inPhase:)];
+            [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_WAITING_SEND_ACK withInterval: (hiddenDevice.totalBytesSent == 0 ? _receiveFirstPacketTimeout: _receivePacketsTimeout) target: self selector: @selector(watchDogTimerTickReceivingSendAck:ManagesDevice:inPhase:)];
         } else {
             // All buffer contents have been sent
             hiddenDevice.sendingData = false;
             hiddenDevice.dataToSend = nil;
             
             // Enable recieve watchdog timer. Waiting for response from Tertium BLE device
-            [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_RECEIVING_DATA withInterval: receiveFirstPacketTimeout target: self selector: @selector(watchDogTimerTickReceivingData:ManagesDevice:inPhase:)];
+            [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_RECEIVING_DATA withInterval: _receiveFirstPacketTimeout target: self selector: @selector(watchDogTimerTickReceivingData:ManagesDevice:inPhase:)];
             return;
         }
     } else {
@@ -570,7 +586,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark TxRxManager implementation
 
 /**
- watchDogTimerTickReceivingData - Watchdog for timeouts on BLE device write acknowledges
+ Watchdog for timeouts on BLE device write acknowledges
  */
 -(void)watchDogTimerTickReceivingSendAck:(TxRxWatchDogTimer *) timer ManagesDevice: (TxRxDevice *) device inPhase: (NSNumber *) phase
 {
@@ -582,7 +598,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark CBPeripheralDelegate implementation
 
 /**
- didWriteValueForCharacteristic - CoreBlueTooth acknowledging our last fragment send
+ CoreBlueTooth acknowledging our last fragment send
  */
 - (void)peripheral:(CBPeripheral *)peripheral didWriteValueForCharacteristic:(nonnull CBCharacteristic *)characteristic error:(nullable NSError *)error
 {
@@ -613,7 +629,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark TxRxManager implementation
 
 /**
- watchDogTimerTickReceivingData - Watchdog for timeouts on BLE device answer to previously issued command
+ Watchdog for timeouts on BLE device answer to previously issued command
  */
 -(void)watchDogTimerTickReceivingData:(TxRxWatchDogTimer *) timer ManagesDevice: (TxRxDevice *) device inPhase: (NSNumber *) phase
 {
@@ -646,7 +662,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark CBPeripheralDelegate implementation
 
 /**
- didUpdateValueForCharacteristic - Core bluetooth informs us we received data from the device
+ Core bluetooth informs us we received data from the device
  */
 - (void)peripheral:(CBPeripheral *)aPeripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
@@ -681,13 +697,13 @@ NSMutableArray *_connectedDevices;
                 });
         } else {
             // Schedule a new watchdog timer for receiving data packets
-            [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_RECEIVING_DATA withInterval: receivePacketsTimeout target: self selector: @selector(watchDogTimerTickReceivingData:ManagesDevice:inPhase:)];
+            [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_RECEIVING_DATA withInterval: _receivePacketsTimeout target: self selector: @selector(watchDogTimerTickReceivingData:ManagesDevice:inPhase:)];
         }
     }
 }
 
 /**
- disconnectDevice - Disconnect a previously connected device
+ Disconnect a previously connected device
  
  @param device The device to disconnect, MUST be non null
  */
@@ -724,14 +740,14 @@ NSMutableArray *_connectedDevices;
     
     // Create a disconnect watchdog timer
     hiddenDevice = (NSObject<TxRxDeviceManagerExchangeProtocol> *) device;
-    [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_DISCONNECTING withInterval: connectTimeout target: self selector: @selector(watchDogTimerForDisconnectTick:ManagesDevice:inPhase:)];
+    [hiddenDevice scheduleWatchdogWithParameters: TERTIUM_PHASE_DISCONNECTING withInterval: _connectTimeout target: self selector: @selector(watchDogTimerForDisconnectTick:ManagesDevice:inPhase:)];
     
     // Ask CoreBlueTooth to disconnect the device
     [_centralManager cancelPeripheralConnection: device.cbPeripheral];
 }
 
 /**
- watchDogTimerForDisconnectTick - Verifies disconnect happens is a timely fashion
+ Verifies disconnect happens is a timely fashion
  */
 -(void)watchDogTimerForDisconnectTick:(TxRxWatchDogTimer *) timer ManagesDevice: (TxRxDevice *) device inPhase: (NSNumber *) phase
 {
@@ -753,7 +769,7 @@ NSMutableArray *_connectedDevices;
 #pragma mark CBCentralManagerDelegate implementation
 
 /**
- didDisconnectPeripheral - Corebluetooth informs us we have disconnected from a peripheral
+ Corebluetooth informs us we have disconnected from a peripheral
  */
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
@@ -839,7 +855,7 @@ NSMutableArray *_connectedDevices;
 
 
 /**
- masterCleanUp - Clears every internal array. May be called on Bluetooth hardware reset
+ Clears every internal array. May be called on Bluetooth hardware reset
  */
 -(void)masterCleanUp
 {
@@ -959,7 +975,6 @@ NSMutableArray *_connectedDevices;
     [self sendScanError: TERTIUM_ERROR_BLUETOOTH_NOT_READY_OR_LOST withText: S_TERTIUM_ERROR_BLUETOOTH_NOT_READY_OR_LOST];
 }
 
-
 // APACHE CORDOVA UTILITY METHODS
 
 /**
@@ -985,6 +1000,54 @@ NSMutableArray *_connectedDevices;
 -(NSString *_Nonnull) getDeviceIndexedName: (TxRxDevice *_Nonnull) device
 {
     return device.IndexedName;
+}
+
+/**
+ Resets current timeout values to default values
+ */
+-(void)setTimeOutDefaults
+{
+    _connectTimeout = 20.0;
+    _receiveFirstPacketTimeout = 2.0;
+    _receivePacketsTimeout = 0.5;
+    _writePacketTimeout = 0.5;
+}
+
+/**
+ Returns the current timeout value for a specified bluetooth event type
+ @param timeOutType - The timeout to retrieve
+ */
+-(uint32_t) getTimeOutValue: (NSString *_Nonnull) timeOutType
+{
+    if ([timeOutType caseInsensitiveCompare: S_TERTIUM_TIMEOUT_CONNECT] == NSOrderedSame) {
+        return _connectTimeout * 1000.0;
+    } else if ([timeOutType caseInsensitiveCompare: S_TERITUM_TIMEOUT_RECEIVE_FIRST_PACKET] == NSOrderedSame) {
+        return _receiveFirstPacketTimeout * 1000.0;
+    } else if ([timeOutType caseInsensitiveCompare: S_TERTIUM_TIMEOUT_RECEIVE_PACKETS] == NSOrderedSame) {
+        return _receivePacketsTimeout * 1000.0;
+    } else if ([timeOutType caseInsensitiveCompare: S_TERTIUM_TIMEOUT_SEND_PACKET] == NSOrderedSame) {
+        return _writePacketTimeout * 1000.0;
+    } else {
+        return 0;
+    }
+}
+
+/**
+ Set the current timeout value for a specified bluetooth event type
+ @param timeOutValue - The timeout value, in MILLISECONDS
+ @param timeOutType - The timeout to retrieve
+ */
+-(void)setTimeOutValue: (uint32_t) timeOutValue forTimeOutType: (NSString *_Nonnull) timeOutType
+{
+    if ([timeOutType caseInsensitiveCompare: S_TERTIUM_TIMEOUT_CONNECT] == NSOrderedSame) {
+        _connectTimeout = timeOutValue / 1000.0;
+    } else if ([timeOutType caseInsensitiveCompare: S_TERITUM_TIMEOUT_RECEIVE_FIRST_PACKET] == NSOrderedSame) {
+        _receiveFirstPacketTimeout = timeOutValue / 1000.0;
+    } else if ([timeOutType caseInsensitiveCompare: S_TERTIUM_TIMEOUT_RECEIVE_PACKETS] == NSOrderedSame) {
+        _receivePacketsTimeout = timeOutValue / 1000.0;
+    } else if ([timeOutType caseInsensitiveCompare: S_TERTIUM_TIMEOUT_SEND_PACKET] == NSOrderedSame) {
+        _writePacketTimeout = timeOutValue / 1000.0;
+    }
 }
 
 @end

@@ -126,32 +126,17 @@
 - (void) getTimeouts:(CDVInvokedUrlCommand*) command
 {
     DLog(@"TxrxPlugin.getTimeouts");
-    NSNumber* connectionTimeout = [NSNumber numberWithDouble: _manager.connectTimeout];
-    NSNumber* writeTimeout = [NSNumber numberWithDouble: _manager.writePacketTimeout];
-    NSNumber* firstReadTimeout = [NSNumber numberWithDouble: _manager.receiveFirstPacketTimeout];
-    NSNumber* laterReadTimeout = [NSNumber numberWithDouble: _manager.receivePacketsTimeout];
-    
-    // Convert connectionTimeot to milliseconds
-    // TODO: remove when library uses milliseconds
-    float temp;
-    temp = [connectionTimeout floatValue];
-    temp = temp * 1000;
-    connectionTimeout = [NSNumber numberWithFloat:temp];
-    temp = [writeTimeout floatValue];
-    temp = temp * 1000;
-    writeTimeout = [NSNumber numberWithFloat:temp];
-    temp = [firstReadTimeout floatValue];
-    temp = temp * 1000;
-    firstReadTimeout = [NSNumber numberWithFloat:temp];
-    temp = [laterReadTimeout floatValue];
-    temp = temp * 1000;
-    laterReadTimeout = [NSNumber numberWithFloat:temp];
+    uint32_t connectionTimeout = [_manager getTimeOutValue: S_TERTIUM_TIMEOUT_CONNECT];
+    uint32_t writeTimeout = [_manager getTimeOutValue: S_TERTIUM_TIMEOUT_SEND_PACKET];
+    uint32_t firstReadTimeout = [_manager getTimeOutValue: S_TERITUM_TIMEOUT_RECEIVE_FIRST_PACKET];
+    uint32_t laterReadTimeout = [_manager getTimeOutValue: S_TERTIUM_TIMEOUT_RECEIVE_PACKETS];
     
     NSMutableDictionary* timeouts = [NSMutableDictionary dictionary];
-    [timeouts setObject: connectionTimeout forKey: @"connectionTimeout"];
-    [timeouts setObject: writeTimeout forKey: @"writeTimeout"];
-    [timeouts setObject: firstReadTimeout forKey:  @"firstReadTimeout"];
-    [timeouts setObject: laterReadTimeout forKey: @"laterReadTimeout"];
+    [timeouts setObject: [NSNumber numberWithInt:connectionTimeout] forKey: @"connectionTimeout"];
+    [timeouts setObject: [NSNumber numberWithInt:writeTimeout] forKey: @"writeTimeout"];
+    [timeouts setObject: [NSNumber numberWithInt:firstReadTimeout] forKey:  @"firstReadTimeout"];
+    [timeouts setObject: [NSNumber numberWithInt:laterReadTimeout] forKey: @"laterReadTimeout"];
+    
     CDVPluginResult* pluginResult = nil;
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary: timeouts];
     [pluginResult setKeepCallbackAsBool:YES];
@@ -172,26 +157,18 @@
     NSNumber* writeTimeout = [command.arguments objectAtIndex:1];
     NSNumber* firstReadTimeout = [command.arguments objectAtIndex:2];
     NSNumber* laterReadTimeout = [command.arguments objectAtIndex:3];
-    double timeout;
+
     if (connectTimeout != nil) {
-        timeout = [connectTimeout doubleValue];
-        timeout = timeout / 1000.00; // TODO: milliseconds
-        [_manager setConnectTimeout:timeout];
+        [_manager setTimeOutValue: [connectTimeout intValue] forTimeOutType: S_TERTIUM_TIMEOUT_CONNECT];
     }
     if (writeTimeout != nil) {
-        timeout = [writeTimeout doubleValue];
-        timeout = timeout / 1000.00; // TODO: milliseconds
-        [_manager setWritePacketTimeout:timeout];
+        [_manager setTimeOutValue: [writeTimeout intValue] forTimeOutType: S_TERTIUM_TIMEOUT_SEND_PACKET];
     }
     if (firstReadTimeout != nil) {
-        timeout = [firstReadTimeout doubleValue];
-        timeout = timeout / 1000.00; // TODO: milliseconds
-        [_manager setReceiveFirstPacketTimeout:timeout];
+        [_manager setTimeOutValue: [firstReadTimeout intValue] forTimeOutType: S_TERITUM_TIMEOUT_RECEIVE_FIRST_PACKET];
     }
     if (laterReadTimeout != nil) {
-        timeout = [laterReadTimeout doubleValue];
-        timeout = timeout / 1000.00; // TODO: milliseconds
-        [_manager setReceivePacketsTimeout:timeout];
+        [_manager setTimeOutValue: [laterReadTimeout intValue] forTimeOutType: S_TERTIUM_TIMEOUT_RECEIVE_PACKETS];
     }
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -208,11 +185,7 @@
     DLog(@"TxrxPlugin.setDefaultTimeouts");
     CDVPluginResult* pluginResult = nil;
     
-    // TODO: get default timeouts from library's constants
-    [_manager setConnectTimeout:20];
-    [_manager setWritePacketTimeout:0.5];
-    [_manager setReceiveFirstPacketTimeout:2];
-    [_manager setReceivePacketsTimeout:0.5];
+    [_manager setTimeOutDefaults];
     
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];

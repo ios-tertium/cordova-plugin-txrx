@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="cordova-plugin-txrx" version="1.1.0">
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="cordova-plugin-txrx" version="1.2.0">
     <name>cordova-plugin-txrx</name>
     <description>Cordova plugin wrapping the native Android and iOS TxRx libraries</description>
     <license>MIT</license>
@@ -57,6 +57,7 @@
         <header-file src="src/ios/Library/TxRxManager.h" />
         <header-file src="src/ios/Library/TxRxManagerErrors.h" />
         <header-file src="src/ios/Library/TxRxManagerPhases.h" />
+        <header-file src="src/ios/Library/TxRxManagerTimeOuts.h" />
         <header-file src="src/ios/Library/TxRxWatchdogTimer.h" />
         
         <source-file src="src/ios/Library/TxRxDevice.m" />
