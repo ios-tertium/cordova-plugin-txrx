@@ -42,11 +42,6 @@
         <!-- Plugin main class -->
         <header-file src="src/ios/TxrxPlugin.h" />
         <source-file src="src/ios/TxrxPlugin.m" />
-
-        <!-- Core class -->
-        <header-file src="src/ios/Core.h" />
-        <header-file src="src/ios/CoreNotification.h" />
-        <source-file src="src/ios/Core.m" />
         
         <!-- TxRx Library -->
         <header-file src="src/ios/Library/TxRxDevice.h" />

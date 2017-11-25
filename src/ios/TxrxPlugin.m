@@ -2,7 +2,6 @@
 
 #import "TxrxPlugin.h"
 #import <Cordova/CDV.h>
-#import "CoreNotification.h"
 #import "TxRxManagerErrors.h"
 
 // Defines Macro to only log lines when in DEBUG mode
@@ -23,22 +22,14 @@
     
     // Setup instance variables
     _jsCallbacks = [NSMutableDictionary dictionary];
-    _core = [Core getCore];
     _manager = [TxRxManager getManager];
+    _manager.delegate = self;
     _connectedDevice = nil;
-    
-    // Add ourself to notification center
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(receiveTxRxNotification:)
-                                                 name:TXRX_NOTIFICATION_NAME
-                                               object:nil];
-    
 }
 
 -(void) dealloc
 {
-    // Remove from notification
-    [[NSNotificationCenter defaultCenter] removeObserver: self];
+    //
 }
 
 
@@ -55,7 +46,7 @@
 - (void) startScan:(CDVInvokedUrlCommand*) command
 {
     DLog(@"TxrxPlugin.startScan");
-    [_core startScan];
+    [_manager startScan];
 }
 
 /**
@@ -65,7 +56,7 @@
 - (void) stopScan:(CDVInvokedUrlCommand*) command
 {
     DLog(@"TxrxPlugin.stopScan");
-    [_core stopScan];
+    [_manager stopScan];
 }
 
 /**
@@ -79,10 +70,10 @@
     if (address != nil && [address length] != 0) {
         TxRxDevice* device = [_manager deviceWithIndexedName:address];
         if (device && device.isConnected == false) {
-            if ([_core isScanning]) {
-                [_core stopScan];
+            if ([_manager isScanning]) {
+                [_manager stopScan];
             }
-            [_core connectDevice: device];
+            [_manager connectDevice: device];
             _connectedDevice = device;
             
         }
@@ -97,10 +88,10 @@
 {
     DLog(@"TxrxPlugin.disconnect");
     if (_connectedDevice != nil) {
-        if ([_core isScanning]) {
-            [_core stopScan];
+        if ([_manager isScanning]) {
+            [_manager stopScan];
         }
-        [_core disconnectDevice:_connectedDevice];
+        [_manager disconnectDevice:_connectedDevice];
     }
 }
 
@@ -115,7 +106,7 @@
     NSData* data = [input dataUsingEncoding:NSUTF8StringEncoding];
     if (_connectedDevice != nil) {
         [self callJsCallback:@"onWriteData" msgAsString:input];
-        [_core sendData:_connectedDevice withData:data];
+        [_manager sendData:_connectedDevice withData:data];
     }
 }
 
@@ -232,58 +223,6 @@
 
 
 ///////////////////////////////////////////////////
-//               TXRX CALLBACKS
-///////////////////////////////////////////////////
-
-/**
- onDeviceFound - Invoked when a new device is found
- @param device - Device that has been found
- */
-- (void) onDeviceFound:(TxRxDevice*) device
-{
-    NSString* indexedName = [_manager getDeviceIndexedName:device];
-    NSDictionary * msg =@{@"name": [device Name], @"address": indexedName};
-    [self callJsCallback:@"onDeviceFound" msgAsDictionary:msg];
-}
-
-/**
- onDeviceConnected - Invoked when a device is connected
- @param device - Device that has been connected
- */
-- (void) onDeviceConnected:(TxRxDevice*) device
-{
-    NSString* indexedName = [_manager getDeviceIndexedName:device];
-    NSDictionary * msg =@{@"name": [device Name], @"address": indexedName};
-    [self callJsCallback:@"onDeviceConnected" msgAsDictionary:msg];
-}
-
-/**
- onDeviceDisconnected - Invoked when a device is disconnected
- @param device - Device that has been disconnected
- */
-- (void) onDeviceDisconnected:(TxRxDevice*) device
-{
-    _connectedDevice = nil;
-    NSString* indexedName = [_manager getDeviceIndexedName:device];
-    NSDictionary * msg =@{@"name": [device Name], @"address": indexedName};
-    [self callJsCallback:@"onDeviceDisconnected" msgAsDictionary:msg];
-}
-
-/**
- onNotifyData - Invoked when there is new data to read
- @param device - Device that has sent the data
- @param data - New data to read
- */
-- (void) onNotifyData:(TxRxDevice*) device withData:(NSData*) data
-{
-    NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    [self callJsCallback:@"onNotifyData" msgAsString:dataStr];
-}
-
-
-
-
-///////////////////////////////////////////////////
 //                  UTILITIES
 ///////////////////////////////////////////////////
 
@@ -329,101 +268,213 @@
 
 
 ///////////////////////////////////////////////////
-//            NOTIFICATIONS RECEIVER
+//            DEVICE MANAGER AND DEVICE
+//            CALLBACKS IMPLEMENTATION
 ///////////////////////////////////////////////////
 
-/**
- receiveTxRxNotification - Receives notifications from the TxRx library
- @param notification - Received notification object
- */
-- (void) receiveTxRxNotification:(NSNotification*) notification
-{
-    // Handles Core class reflected notifications.
-    // The notifications are reflections of TxRxDeviceScanProtocol delegate callbacks
-    
-    if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_SCAN_BEGAN]) {
-        DLog(@"TxrxPlugin.scanBegan");
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_SCAN_ERROR]) {
-        NSError* error = (NSError*) notification.object;
-        DLog(@"TxrxPlugin.scanError: %@", error.localizedDescription);
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_SCAN_ENDED]) {
-        DLog(@"TxrxPlugin.scanEnded");
-        [self callJsCallback:@"afterStopScan"];
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_FOUND]) {
-        DLog(@"TxrxPlugin.deviceFound");
-        TxRxDevice* device = (TxRxDevice*) notification.object;
-        [self onDeviceFound:device];
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_CONNECTED]) {
-        DLog(@"TxrxPlugin.deviceConnected");
-        TxRxDevice* device = (TxRxDevice*) notification.object;
-        [self onDeviceConnected:device];
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_DISCONNECTED]) {
-        DLog(@"TxrxPlugin.deviceDisconnected");
-        TxRxDevice* device = (TxRxDevice*) notification.object;
-        [self onDeviceDisconnected:device];
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_READY]) {
-        DLog(@"TxrxPlugin.deviceReady");
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_DATA_RECEIVED]) {
-        DLog(@"TxrxPlugin.deviceDataReceived");
-        NSData* data = (NSData *) notification.object;
-        TxRxDevice* device = (TxRxDevice*) [notification userInfo][@"device"];
-        [self onNotifyData:device withData:data];
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_DATA_RECEIVE_ERROR]) {
-        NSError* error = (NSError*) notification.object;
-        DLog(@"TxrxPlugin.deviceDataReceivedError: %@", error.localizedDescription);
-        if (error.code == TERTIUM_ERROR_DEVICE_RECEIVING_DATA_TIMEOUT) {
-            [self callJsCallback:@"onReadNotifyTimeout" msgAsString:error.localizedDescription];
-        }
-        else {
-            [self callJsCallback:@"onReadError" msgAsString:error.localizedDescription];
-        }
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_CONNECT_ERROR]) {
-        NSError* error = (NSError*) notification.object;
-        DLog(@"TxrxPlugin.deviceConnectError: %@", error.localizedDescription);
-        if (error.code == TERTIUM_ERROR_DEVICE_CONNECT_TIMED_OUT) {
-            [self callJsCallback:@"onConnectionTimeout" msgAsString:error.localizedDescription];
-        }
-        else {
-            [self callJsCallback:@"onConnectionError" msgAsString:error.localizedDescription];
-        }
-    }
-    
-    else if ([[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_DATA_SEND_ERROR]) {
-        NSError* error = (NSError*) notification.object;
-        DLog(@"TxrxPlugin.deviceDataSendError: %@", error.localizedDescription);
-        if (error.code == TERTIUM_ERROR_DEVICE_SENDING_DATA_TIMEOUT) {
-            [self callJsCallback:@"onWriteTimeout" msgAsString:error.localizedDescription];
-        }
-        else {
-            [self callJsCallback:@"onWriteError" msgAsString:error.localizedDescription];
-        }
-    }
-    
-    else if (
-               [[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_INTERNAL_ERROR] ||
-               [[notification userInfo][@"type"] isEqualToString:TXRX_NOTIFICATION_DEVICE_ERROR]) {
-        NSError* error = (NSError*) notification.object;
-        DLog(@"TxrxPlugin.deviceError: %@", error.localizedDescription);
 
+/**
+ TxRxDeviceScanProtocol implementation.
+ 
+ Implements the TxRxManager callbacks for the SCANNING devices phase
+ */
+#pragma mark TxRxDeviceScanProtocol
+
+/**
+ deviceScanError - Receives information an error occoured while scanning devices and dispatches it to the whole application
+ 
+ Errors may be: bluetooth is disabled, the application doesn't have bluetooth permissions, bluetooth is resetting or shutting down, or any other error CoreBluetooth reports
+ 
+ @param error - NSError describing the error
+ */
+-(void)deviceScanError: (NSError *_Nonnull) error
+{
+    DLog(@"TxrxPlugin.scanError: %@", error.localizedDescription);
+}
+
+/**
+ deviceScanBegan -  Receives information scanning has began and dispatches the information to the whole application
+ Clears previously scanned devices, if present
+ */
+-(void)deviceScanBegan
+{
+    DLog(@"TxrxPlugin.scanBegan");
+}
+
+/**
+ deviceFound -  Receives information scanning phase has found a device and broadcasts the information to the whole application
+ Mantains a reference to the instance of the device scanned
+ Sets the delegate of the device to itself
+ 
+ @param device - the device found. You may now connect to the device with connectDevice
+ */
+-(void)deviceFound: (TxRxDevice *_Nonnull) device
+{
+    DLog(@"TxrxPlugin.deviceFound");
+    device.delegate = self;
+    NSString* indexedName = [_manager getDeviceIndexedName:device];
+    NSDictionary * msg =@{@"name": [device Name], @"address": indexedName};
+    [self callJsCallback:@"onDeviceFound" msgAsDictionary:msg];
+}
+
+/**
+ deviceScanEnded - Receives information device scanning successfully ended and dispatches it to the whole application
+ */
+-(void)deviceScanEnded
+{
+    DLog(@"TxrxPlugin.scanEnded");
+    [self callJsCallback:@"afterStopScan"];
+}
+
+/**
+ TxRxDeviceScanProtocol implementation.
+ 
+ Implements the TxRxManager callbacks for operation on devices phase
+ 
+ */
+#pragma mark TxRxDeviceDataProtocol
+
+/**
+ deviceConnectError - Receives error information connecting to a device requested by a previous call to connectDevice and dispatches it to the whole application
+ 
+ @param device - The TxRxDevice instance of the device unable to be connected
+ @param error - NSError describing the error
+ */
+-(void)deviceConnectError: (TxRxDevice *_Nonnull) device withError: (NSError *_Nonnull) error
+{
+    DLog(@"TxrxPlugin.deviceConnectError: %@", error.localizedDescription);
+    if ([error code] == TERTIUM_ERROR_DEVICE_DISCONNECT_TIMED_OUT) {
+        [self callJsCallback:@"onConnectionTimeout" msgAsString:error.localizedDescription];
     }
+    else {
+        [self callJsCallback:@"onConnectionError" msgAsString:error.localizedDescription];
+    }
+}
+
+/**
+ deviceConnected - Receives information a device has been connected by a previous call to connectDevice and dispatches it to the whole application
+ 
+ NOTE: TxRxManager library will connect ONLY to Tertium BLE devices
+ 
+ @param device - The TxRxDevice instance of the connected device
+ */
+-(void)deviceConnected: (TxRxDevice *_Nonnull) device
+{
+    DLog(@"TxrxPlugin.deviceConnected");
+    NSString* indexedName = [_manager getDeviceIndexedName:device];
+    NSDictionary * msg =@{@"name": [device Name], @"address": indexedName};
+    [self callJsCallback:@"onDeviceConnected" msgAsDictionary:msg];
+}
+
+/**
+ deviceReady - Receives information a device has been connected by a previous call to connectDevice and dispatches it to the whole application
+ 
+ NOTE: TxRxManager library will connect ONLY to Tertium BLE devices
+ 
+ @param device - The TxRxDevice instance of the connected device
+ */
+-(void)deviceReady: (TxRxDevice *_Nonnull) device
+{
+    DLog(@"TxrxPlugin.deviceReady");
+}
+
+/**
+ deviceWriteError - Receives information a write operation issued by previous sendData command on a device failed and dispatches it to the whole application
+ 
+ @param device - The TxRxDevice instance of the device which generated the error
+ @param error - NSError describing the error
+ */
+-(void)deviceWriteError: (TxRxDevice *_Nonnull) device withError: (NSError *_Nonnull) error
+{
+    if ([error code] == TERTIUM_ERROR_DEVICE_SENDING_DATA_TIMEOUT) {
+        [self callJsCallback:@"onWriteTimeout" msgAsString:error.localizedDescription];
+    }
+    else {
+        [self callJsCallback:@"onWriteError" msgAsString:error.localizedDescription];
+    }
+}
+
+/**
+ sentData - Receives information data sent to a device in a previous sendData call has been sent correctly and dispatches it to the whole application
+ 
+ @param device - The TxRxDevice to which data has been correctly sent
+ */
+-(void)sentData: (TxRxDevice *_Nonnull) device
+{
+    DLog(@"TxrxPlugin.sentData: ");
+}
+
+/**
+ deviceReadError - Receives information a read operation on a device failed in response to a previous sent command and dispatches it to the whole application
+ 
+ @param device - The TxRxDevice instance of the device which generated the error
+ @param error - NSError describing the error
+ */
+-(void)deviceReadError: (TxRxDevice *_Nonnull) device withError: (NSError *_Nonnull) error
+{
+    DLog(@"TxrxPlugin.deviceDataReceivedError: %@", error.localizedDescription);
+    if ([error code] == TERTIUM_ERROR_DEVICE_RECEIVING_DATA_TIMEOUT) {
+        [self callJsCallback:@"onReadNotifyTimeout" msgAsString:error.localizedDescription];
+    }
+    else {
+        [self callJsCallback:@"onReadError" msgAsString:error.localizedDescription];
+    }
+}
+
+/**
+ receivedData - Receives information a device has sent databytes and dispatches it to the whole application
+ 
+ @param device - The TxRxDevice instance of the device which sent the bytes
+ @param data - An instance of NSData with the data received
+ */
+-(void)receivedData: (TxRxDevice *_Nonnull) device withData: (NSData *_Nonnull) data
+{
+    DLog(@"TxrxPlugin.deviceDataReceived");
+    NSString* dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    [self callJsCallback:@"onNotifyData" msgAsString:dataStr];
+}
+
+/**
+ Receives information a critical error on a device occoured and dispatches it to the whole application. NOTE: ANY operation on the device MUST be ceased immediately
+ 
+ @param device - The TxRxDevice instance of the device which generated the error
+ @param error  - NSError describing the error
+ */
+-(void)deviceError: (TxRxDevice *_Nonnull) device withError: (NSError *_Nonnull) error
+{
+    DLog(@"TxrxPlugin.deviceError: %@", error.localizedDescription);
+}
+
+/**
+ Receives information an intenral error on a device occoured and dispatches it to the whole application
+ 
+ @param error  - NSError describing the error
+ */
+- (void)deviceInternalError:(NSError * _Nonnull)error {
+    DLog(@"TxrxPlugin.deviceInternalError: %@", error.localizedDescription);
+}
+
+/**
+ Receives information a device has been disconnected by a previous call to disconnectDevice and dispatches it to the whole application
+ 
+ @param device - The TxRxDevice instance of the disconnected device
+ */
+-(void)deviceDisconnected: (TxRxDevice *_Nonnull) device
+{
+    DLog(@"TxrxPlugin.deviceDisconnected");
+    _connectedDevice = nil;
+    NSString* indexedName = [_manager getDeviceIndexedName:device];
+    NSDictionary * msg =@{@"name": [device Name], @"address": indexedName};
+    [self callJsCallback:@"onDeviceDisconnected" msgAsDictionary:msg];
+}
+
+/**
+ Receives information a critical error on a device occoured and dispatches it to the whole application
+ 
+ @param error  - NSError describing the error
+ */
+- (void)deviceInternalError:(TxRxDevice * _Nonnull)device withError:(NSError * _Nonnull)error {
+    DLog(@"TxrxPlugin.deviceInternalError: %@", error.localizedDescription);
 }
 
 

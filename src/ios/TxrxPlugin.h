@@ -3,12 +3,10 @@
 #import <Cordova/CDV.h>
 #import "TxRxManager.h"
 #import "TxRxDeviceScanProtocol.h"
-#import "Core.h"
 
 
-@interface TxrxPlugin : CDVPlugin {
+@interface TxrxPlugin : CDVPlugin<TxRxDeviceScanProtocol, TxRxDeviceDataProtocol> {
     NSMutableDictionary *_jsCallbacks;
-    Core* _core;
     TxRxManager* _manager;
     TxRxDevice* _connectedDevice;
 }
