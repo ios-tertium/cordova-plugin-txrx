@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-txrx",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Cordova plugin wrapping the native Android and iOS TxRx libraries",
   "author": {
     "name": "Tertium Technology"
@@ -15,10 +15,9 @@
   "dependencies": {},
   "devDependencies": {},
   "optionalDependencies": {},
-  "gitHead": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tertiumtechnology/cordova-plugin-txrx.git"
+    "url": "https://github.com/tertiumtechnology/cordova-plugin-txrx.git"
   },
   "keywords": [
     "cordova",
